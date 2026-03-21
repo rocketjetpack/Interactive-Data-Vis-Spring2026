@@ -9,3 +9,6 @@ yarn-error.log
 
 /.cursor/commands/*
 
+
+src/personal_notes/*
+src/personal_notes
