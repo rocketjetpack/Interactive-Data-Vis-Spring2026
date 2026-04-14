@@ -49,8 +49,8 @@ const currentStaffing = {
     border-left: 4px solid #0e7741;
     padding: 5px 5px;
     margin: 1.2rem 0;
-    font-size: 0.92rem;
-    line-height: 1.75;
+    font-size: 12pt;
+    line-height: 1.5;
     color: #222;
     max-width: 860px;
   }
@@ -60,13 +60,15 @@ const currentStaffing = {
   }
 
   .answer-box {
-    background: #f8f8f6;
     padding: 5px 5px;
     margin: 5px 0;
-    font-size: 12;
+    font-size: 12pt;
     line-height: 1.5;
-    color: #222;
     max-width: 900px;
+  }
+
+  .answer-box p {
+    max-width: 860px;
   }
 
   .input-wrap {
@@ -77,15 +79,14 @@ const currentStaffing = {
     font-size: 14px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
     color: #0e7741;
     display: block;
-    margin-bottom: 0.4rem;
+    margin-bottom: 3px;
   }
 
   .input-wrap select {
     appearance: none;
-    background: #f8f8f6;
+    background: #f9f9f9;
     border: 1.5px solid #0e7741;
     border-radius: 0;
     padding: 5px;
@@ -151,17 +152,23 @@ const stations = [...new Set(ridership.map(d => d.station))].sort();
   <div class="input-wrap">
 
 ```js
+// Generate a list of unique stations from the stations object
 const stationPick = view(Inputs.select(stations, { label: "Station", value: "Times Sq-42 St" }));
 ```
 
   </div>
 
 ```js
+// Filter ridership data to the selected station
 const stationData = ridership.filter(d => d.station === stationPick);
+
+// Fetch events from 2025 that occurred near the selected station
 const eventDates = new Set(local_events.filter(e => e.nearby_station === stationPick).map(e => e.date.getTime()));
+
+// Create a object combining event date with the event type filtered by the selected station
 const stationEventDots = stationData.filter(d => eventDates.has(d.date.getTime()))
   .map(d => ({
-    ...d,
+    date: d.date,
     eventName: local_events.find(e => e.nearby_station === stationPick && e.date.getTime() === d.date.getTime())?.event_name
   }));
 ```
@@ -172,31 +179,38 @@ Plot.plot({
   height: 460,
   x: { type: "time", tickFormat: "%b %-d", ticks: 10, axis: "top" },
   y: { domain: [0, 35000] },
-  marginBottom: 120,
+  marginBottom: 120, // Leave plenty of room for event labels
   marks: [
+    // Start with transparent lines for all stations
     Plot.lineY(ridership, {
       x: "date",
       y: "entrances",
       z: "station",
       stroke: "#333",
-      opacity: 0.1,
+      opacity: 0.15,
       strokeWidth: 1,
     }),
+
+    // Add a solid green line for the selected station
     Plot.lineY(stationData, {
       x: "date",
       y: "entrances",
       stroke: "#0e7741",
       strokeWidth: 2.5,
-      opacity: 0.75,
+      opacity: 1,
       tip: true,
       title: d => `Date: ${d.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}\nEntrances: ${d.entrances.toLocaleString()}`,
     }),
+
+    // Draw vertical dashed lines representing events at the selected station from 2025
     Plot.ruleX(stationEventDots, {
       x: "date",
       stroke: "#000",
       strokeWidth: 1,
       strokeDasharray: "4,3",
     }),
+
+    // Label the bottom of the event dashed line with the type of event
     Plot.text(stationEventDots, {
       x: "date",
       y: 0,
@@ -207,11 +221,16 @@ Plot.plot({
       dx: -6,
       dy: 5,
     }),
+
+    // July 15 represents a fare increase and should be drawn for every station
     Plot.ruleX([fareDate], {
       stroke: "red",
       strokeWidth: 1.5,
       strokeDasharray: "6,4",
+      opacity: 0.5
     }),
+
+    // Add an annotation to make it clear that July 15 represents the fare increase
     Plot.text([fareDate], {
       x: d => d,
       y: ridership[0].entrances,
@@ -227,11 +246,10 @@ Plot.plot({
 ```
 
 <div class="explainer-area">
-I must admit, I spent far too long playing with the style of this. I wanted a self-contained plot element that tied the select box in with the plot itself. I also spent an absurd amount of time playing with the bottom margin and angle of the event text to hopefully prevent event text from being cut off. Some of these event names are just very long which leads to a lot of dead space that I'm not sure what to do with. I generally like the appearance, and it made me experiment with CSS and HTML with Observable elements inside.
+I must admit, I spent far too long playing with the style of this. I wanted a self-contained plot element that tied the select box in with the plot itself as a visually distinct element on the page. I generally like the appearance, and it made me experiment with CSS and HTML with Observable elements inside.
 
-Also, thanks to Claude for generally useful CSS. I love the modern ability to describe generally what I want, get the CSS, then iterate from there.
+Also, thanks to Claude for generally useful CSS. CSS is such an annoying time sink.
 </div>
-
 </div>
 
 <div class="answer-box">
@@ -262,20 +280,15 @@ Also, thanks to Claude for generally useful CSS. I love the modern ability to de
   <div class="input-wrap">
 
 ```js
-const stationPick_Incident = view(Inputs.select(
-  [...new Set(incidents.map(d => d.station))].sort(),
-  { label: "Station" }
-))
+/// I dont think its safe to re-display the pervious charts station dropdown, so this is a new one
+const stationPick_Incident = view(Inputs.select(stations, { label: "Station", value: "Times Sq-42 St" }));
 ```
 
 ```js
+// Filter incident data by the selected station to enable tooltips for only the selected one
 const filtered = incidents.filter(d => d.station === stationPick_Incident);
-const avgResponseMins = d3.mean(filtered, d => d.response_time_minutes);
-const totalIncidents = filtered.length;
-const totalRidership = d3.mean(
-  ridership.filter(d => d.station === stationPick_Incident),
-  d => d.entrances + d.exits
-);
+
+// Add the selection status to the raw data
 const stationAvg = incidents.map(d => ({
   ...d,
   selected: d.station === stationPick_Incident
@@ -284,6 +297,8 @@ const stationAvg = incidents.map(d => ({
 
 ```js
 // Construct a spreadable object that represents response time by station
+// I am new to this spreadable concept, but the Observable docs recommended it in some examples, so I guess its time to learn.
+// This means all the data for the plot needs to be in a single structure
 const xy = {
   x: "response_time_minutes",
   y: "station",
@@ -300,8 +315,13 @@ Plot.plot({
     range: ["green", "orange", "crimson"],
   },
   marks: [
+    // Add a line to separate station names from incident response data
     Plot.ruleX([0]),
+    
+    // Mark the average response time for all incidents
     Plot.ruleX([d3.mean(incidents, d => d.response_time_minutes)], { stroke: "red", strokeOpacity: 0.5 }),
+
+    // Label the incident average line
     Plot.text([{ x: d3.mean(incidents, d => d.response_time_minutes) }], {
       x: "x",
       text: ["All Incident Average"],
@@ -313,8 +333,14 @@ Plot.plot({
       fill: "red",
       fillOpacity: 0.5
     }),
-    Plot.ruleY(stationAvg, Plot.groupY({ x1: "min", x2: "max" }, { ...xy, stroke: "#ddd" })),
+
+    // Horizontal line showing the range from fastest to slowest response per-station
+    Plot.ruleY(stationAvg, Plot.groupY({ x1: "min", x2: "max" }, { ...xy, stroke: "#ddd" })), 
+
+    // Dot mark the average response times for each incident severity per-station
     Plot.dot(stationAvg, Plot.groupY({ x: "mean" }, { ...xy, fill: "severity", fillOpacity: 0.2, r: 4 })),
+
+    // Dot mark the average response times for each incident severity for the selected station and add a tip
     Plot.dot(filtered, Plot.groupY({ x: "mean" }, { ...xy, fill: "severity", r: 5, tip: true }))
   ]
 })
@@ -326,10 +352,17 @@ Plot.plot({
     Originally, I wanted to try to combine the incident data and/or the staffing data to see if there was any likely
     connections between ridership or staffing and response time. It seems expected that staffing level would have an
     impact on responsiveness to incidents, but I could not come up with a clean way to visualize this.
+</div>
+<br />
+<div class="explainer-area">
+    I also wanted to draw a box to group the eight stations with the best response times as they are very similar. I couldn't find a way. I suspect that slicing the top 8 and using that in a Plot.boxX  would do it, but repeatedly failed in trying to do this.
+  </div>
   </div>
 
   <div class="answer-box">
-  
+    <p>
+    From the incident data, Times square has the fastest overall response to events, but several other stations respond more quickly to <strong style="color: red">high</strong> severity events. Overall, there are eight stations that have functionally comparable response times.
+    </p>
   </div>
 </div>
 
@@ -338,11 +371,7 @@ Plot.plot({
 ## Section 3: Staffing Need Prediction
 
 <div class="notes-box">
-  The starting point for predicting event-related staffing needs is to identify how much events in 2025 contributed to
-  increased ridership activity at nearby stations. For this, a ratio is calculated representing how much extra traffic
-  each station experienced as a result of 2025 events based on the <strong style="color: red">estimated_attendance</strong> value.
-  The same calculation is applied to the <strong style="color: red">expected_attendance</strong> numbers for 2026. This lets us compare
-  the expected surge in 2026 against the known surge in 2025.
+  The third question for this lab asks us to identify three stations needing the most help for the 2026 summer season based on upcoming events.
 </div>
 
 ```js
@@ -353,12 +382,13 @@ const avgDailyRidership = d3.rollup(
   d => d.station
 )
 
-// Surge ratio: how much does each event's attendance represent relative to a normal day?
+// Calcualte how much each events attendance represent relative to a normal day?
 const eventSurges = local_events.map(d => ({
   ...d,
   surgeRatio: d.estimated_attendance / (avgDailyRidership.get(d.nearby_station) ?? 1)
 }))
 
+// Calculate the same for the expected events in 2026
 const upcomingSurges = upcoming_events.map(d => ({
   ...d,
   surgeRatio: d.expected_attendance / (avgDailyRidership.get(d.nearby_station) ?? 1)
@@ -378,12 +408,13 @@ function surgeSummaryFrom(data, nearbyStation, year) {
   )
 }
 
+// Bring the data for 2025 and 2026 into one array and add a year column
 const surgeSummaryAll = [
   ...surgeSummaryFrom(eventSurges, "nearby_station", "2025"),
   ...surgeSummaryFrom(upcomingSurges, "nearby_station", "2026")
 ]
 
-// Pivot to one row per station with both years' max surge, drop stations missing either year
+// Restructure the array to be grouped by station with stats from 2025 and 2025 as fields
 const surgeLinks = Array.from(
   d3.rollup(surgeSummaryAll, v => Object.fromEntries(v.map(d => [d.year, d.max])), d => d.station),
   ([station, d]) => ({ station, max2025: d["2025"] ?? 0, max2026: d["2026"] ?? 0 })
@@ -395,6 +426,7 @@ const stationOrder = surgeLinks
   .sort((a, b) => (b.max2026 - b.max2025) - (a.max2026 - a.max2025))
   .map(d => d.station)
 
+// Use array slice to get the top 3 stations with the highest surge increase
 const top3Gap = stationOrder.slice(0, 3)
 ```
 
@@ -403,7 +435,9 @@ const top3Gap = stationOrder.slice(0, 3)
 
   <p class="chart-instruction">This chart shows anticipated 2026 event surge in relation to 2025 for stations where event traffic is expected to increase. Stations are sorted by largest increase.</p>
 
-  <p class="chart-instruction">Event surge compares station activity on event days to the average activity on non-event days. Dot size represents current staff count. The top 3 stations with the largest surge increase are annotated.</p>
+  <p class="chart-instruction">Event surge compares station activity on event days to the average activity on non-event days. Dot size represents current staff count. The top 3 stations with the largest surge increase are annotated.
+  </p>
+
 
 ```js
 Plot.plot({
@@ -413,9 +447,13 @@ Plot.plot({
   style: { fontSize: 12 },
   x: { label: "Surge ratio", grid: true, domain: [0, 1] },
   y: { label: null, domain: stationOrder },
-  color: { domain: ["2025", "2026"], range: ["#0e7741", "#e07741"], legend: true },
-  r: { range: [2, 8] },
+  color: { domain: ["2025", "2026"], range: ["#0e7741", "#e07741"], legend: true }, //define the coloring
+  r: { range: [2, 8] }, // Range of radius size to make staff level part of the chart
   marks: [
+    // Add a clear line between station names and surge data
+    Plot.ruleX([0]),
+
+    // Horizontal line connecting 2025 surge ratio with 2026
     Plot.line(surgeSummaryAll, {
       x: "max",
       y: "station",
@@ -423,6 +461,8 @@ Plot.plot({
       stroke: "#ccc",
       strokeWidth: 1
     }),
+
+    // Draw dots for 2025 and 2026 surge ratio per-station colored by year and sized by staff count
     Plot.dot(surgeSummaryAll, {
       x: "max",
       y: "station",
@@ -430,6 +470,8 @@ Plot.plot({
       fill: "year",
       opacity: 0.5
     }),
+
+    // Draw larger circles around the 2026 dots for the 3 stations anticipating the largest increase in 2026
     Plot.dot(surgeSummaryAll.filter(d => top3Gap.includes(d.station) && d.year === "2026"), {
       x: "max",
       y: "station",
@@ -438,6 +480,8 @@ Plot.plot({
       stroke: "#e07741",
       strokeWidth: 2
     }),
+
+    // Label the surge ratio increase from 2025 to 2026 for those 3 stations
     Plot.text(surgeSummaryAll.filter(d => top3Gap.includes(d.station) && d.year === "2026"), {
       x: "max",
       y: "station",
@@ -453,4 +497,80 @@ Plot.plot({
 })
 ```
 
+</div>
+
+<div class="answer-box">
+  <p>
+    To answer this question I first rollup each stations daily entrances and exits by station for 2025, then look at traffic on days with events at a nearby station to calculate a ratio of how much the event-day traffic exceeds the average day. This effect is scaled with the estimated_attendance value for the event to scale the event surge with the size of the event.
+  </p>
+  <p>
+    This same approach is then applied to the expected_attendance for upcoming 2026 events. Only nine stations are expected to increase event traffic in 2026. The largest expected event based increase is <strong style="color: red">West 4th St - Washington Square</strong>.  This station has an average daily entrances and exits of 11,323, and only one small event in 2025 with 1,120 estimated attendance. In June 2026, a gallery opening near W 4th is expected to draw 8,328 attendance.
+  </p>
+  <p>
+    This 2026 event surge prediction based on 2025 values also highlights Fulton St and 23rd St as stations at risk of being heavily impacted by increased activity for events. Staffing levels at West 4th St and 23rd St are low, with 4 and 8 staff respectively. Fulton St is a bit unique with a healthy 17 staff, though it also has 4 events planned for the summer of 2026.
+</div>
+
+<hr />
+
+## Bonus: One Station to Increase Staff
+
+<div class="chart-wrap">
+  <h2>Staffing Level, Average Riders, and 2026 Surge</h2>
+
+  <p class="chart-instruction">
+    This chart explores average daily ridership on the X axis, staffing level on the Y axis, and anticipated 2026 surge as the color.
+  </p>
+
+```js
+// Recover the 2026 surge expectation from surgeSummaryAll
+const surge2026ByStation = new Map(
+  surgeSummaryAll
+  .filter( d => d.year === "2026" )
+  .map(d => [d.station, d.max])
+)
+
+//Construct a single object that contains staffing, average daily ridership, and 2026 surge grouped by station
+const bonusPlotData = Object.entries(currentStaffing).map(
+  ([station, staff]) => ({
+    station,
+    staff,
+    avgDaily: avgDailyRidership.get(station) ?? 0,
+    surge2026: surge2026ByStation.get(station) ?? 0
+  })
+)
+```
+
+```js
+// Construct the scatter plot
+Plot.plot({
+  width: 900,
+  height: 500,
+  x: { label: "Avg. Daily Ridership", grid: true, domain: [9000, 38000] },
+  y: { label: "Staff Count", grid: true, domain: [2, 22] },
+  color: { label: "2026 Surge", legend: true, scheme: "YlOrRd" },
+  r: { range: [1, 30] },
+  marks: [
+    Plot.dot(
+      bonusPlotData,
+      {
+        x: "avgDaily",
+        y: "staff",
+        fill: "surge2026",
+        r: "avgDaily",
+        opacity: 0.8,
+        tip: true,
+        title: d => `${d.station}\nAvg ridership: ${Math.round(d.avgDaily)}\nStaff: ${d.staff}\n2026 Surge: ${d.surge2026.toFixed(2)}`
+      }
+    )
+  ]
+})
+```
+
+</div>
+
+<div class="answer-box">
+  <p>
+    This chart highlights a major challenge point that was not revealed in Section 2: Canal St. This station had no nearby events in 2025 and was ignored in the filtering in Section 2, which was purely focused on stations expecting more event traffic in 2026 than they had in 2025. <strong style="color: red">Canal St</strong> had no nearby events in 2025, but is scheduled for a whopping 8 nearby events in 2026! Operating with only 4 staff, and expecting traffic surge of 113% of normal ridership, this station will be in dire need of additional staffing.
+  </p>
+</div>
 </div>
