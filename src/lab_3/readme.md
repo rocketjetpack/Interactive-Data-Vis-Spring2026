@@ -16,10 +16,12 @@ The assignment requirements are as follows:
    - How did the candidate do, overall? How do the results vary by district? By income level?
    - How did people feel about the issues? What other information do the survey responses tell us?
    - What was the extent of the Get Out The Vote campaign? Was it successful?
-5. Submit your [deployed link](#4-set-up-your-github-pages-for-your-deployment) as a comment on the lab 3 commons post.
+5. Submit your lab via email directly to me (ellie.frymire@gmail.com). Include:
+    1. your github repository folder link for this lab, which will look something like `https://github.com/[USERNAME]/Interactive-Data-Vis-Spring2026/tree/main/src/[LAB FOLDER]`.
+    2. your [deployed link](#4-set-up-your-github-pages-for-your-deployment), which will look something like `https://[USERNAME].github.io/Interactive-Data-Vis-Spring2026/[LAB FOLDER]/`.
 
 
-Since this lab doesn't have a set slate of research questions, take time to understand the data, consider what you think is important context for the staff, and present it thougtfully and clearly. As mentioned in the syllabus (pdf in the home page of [commons](https://data73200fall2025.commons.gc.cuny.edu/)), for labs 3 and 4, you will be graded on:
+Since this lab doesn't have a set slate of research questions, take time to understand the data, consider what you think is important context for the staff, and present it thougtfully and clearly. As mentioned in the syllabus (pdf in the home page of [commons](https://data73200spring2026.commons.gc.cuny.edu/)), for labs 3 and 4, you will be graded on:
 - On time submission 
 - Technical requirements met
 - Thoughtful responses to research questions (if applicable)
