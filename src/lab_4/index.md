@@ -454,7 +454,7 @@ display(html`<div class="year-display">${anomalyYear}</div>`);
 ```js
 const anomalyYear = view(Inputs.range(
   [anomalyStartYear, anomalyEndYear],
-  { step: 1, value: 2010, label: "" }
+  { step: 1, value: 1955, label: "" }
 ));
 ```
 
